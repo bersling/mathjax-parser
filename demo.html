@@ -27,8 +27,16 @@
 <script>
   function parseMathjaxWithDemoString() {
     var demoString = document.getElementById("demo").innerHTML;
+
+    var config = {
+          inlineMath: [['$','$'],['\\(','\\)']],
+          displayMath: [['$$','$$'],['\\[','\\]']],
+          inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
+          displayMathReplacement: ['<span class="display-math" style="color: purple">','</span>']
+        }
+
     var parser = new MathjaxParser();
-    document.getElementById("result").innerHTML = parser.parse(demoString).outputHtml;
+    document.getElementById("result").innerHTML = parser.parse(demoString, config).outputHtml;
   }
 </script>
 
