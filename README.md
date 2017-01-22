@@ -32,3 +32,7 @@ var config = {
 
 parser.parse(demoString, config).outputHtml;
 ```
+
+## Thoughts behind the parser
+A description of the building-and-thought-process of the parser can be found here: https://www.bersling.com/2017/01/22/mathjax-parser-for-html-strings/
+
