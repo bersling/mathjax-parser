@@ -1,3 +1,4 @@
+(function(window, angular) {
 var MathjaxParser = (function () {
     function MathjaxParser() {
         var _this = this;
@@ -107,3 +108,6 @@ var MathjaxParser = (function () {
     }
     return MathjaxParser;
 }());
+var parser = new MathjaxParser();
+angular.module('MathjaxParser', []).service('MathjaxParserService', parser);
+})(window, window.angular);
