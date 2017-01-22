@@ -17,3 +17,18 @@ var parser = new MathjaxParser();
 parser.parse(demoString).outputHtml;
 ```
 (see the demo.html)
+
+## Providing a configuration
+Running the parser without a configuration is a bit pointless. Provide it with a config that looks like this:
+```
+var parser = new MathjaxParser();
+
+var config = {
+          inlineMath: [['$','$'],['\\(','\\)']],
+          displayMath: [['$$','$$'],['\\[','\\]']],
+          inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
+          displayMathReplacement: ['<span class="display-math" style="color: blue">','</span>']
+        }
+
+parser.parse(demoString, config).outputHtml;
+```
