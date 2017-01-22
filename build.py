@@ -8,3 +8,4 @@ angularEnd = "  var parser = new MathjaxParser();\n" + \
              "})(window, window.angular);";
 
 print(angularStart + contents + angularEnd);
+
