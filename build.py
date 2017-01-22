@@ -4,7 +4,9 @@ with open('mathjax-parser.js', 'r') as myfile:
 
 angularStart = "(function(window, angular) {\n";
 angularEnd = "var parser = new MathjaxParser();\n" + \
-             "angular.module('MathjaxParser', []).service('MathjaxParserService', parser);\n" + \
+             "angular.module('MathjaxParser', []).service('MathjaxParserService', function(){\n" + \
+             "this.parse = parser\n" + \
+             "});\n" + \
              "})(window, window.angular);";
 
 f = open('angular-mathjax-parser.js', 'w')

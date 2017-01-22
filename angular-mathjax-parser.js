@@ -109,5 +109,7 @@ var MathjaxParser = (function () {
     return MathjaxParser;
 }());
 var parser = new MathjaxParser();
-angular.module('MathjaxParser', []).service('MathjaxParserService', parser);
+angular.module('MathjaxParser', []).service('MathjaxParserService', function(){
+this.parse = parser
+});
 })(window, window.angular);
