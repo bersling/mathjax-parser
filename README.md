@@ -8,6 +8,9 @@ You can install this to your codebase in multiple ways.
 ### Bower
 bower install --save mathjax-parser
 
+### NPM
+npm install --save mathjax-parser
+
 ### Just get the JS
 Download mathjax-parser.js and include the script tag
 
