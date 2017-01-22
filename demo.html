@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo for Mathjax Parser</title>
+  
+  <script
+      src="https://code.jquery.com/jquery-3.1.1.min.js"
+      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+      crossorigin="anonymous"></script>
+  <script src="./mathjax-parser.js"></script>
+  
+</head>
+<body>
+
+<div id="demo">
+  <p>I'd kill for something like a $$ cold beer $$</p>
+  <p> $Hello <br> world$, isn't it a sunny <strong> day <br> today? </strong> Cool beans. </p>
+</div>
+
+<hr>
+
+<div id="result"></div>
+
+<button onclick="parseMathjaxWithDemoString()">Parse</button>
+
+<script>
+  function parseMathjaxWithDemoString() {
+    var demoString = document.getElementById("demo").innerHTML;
+    var parser = new MathjaxParser();
+    document.getElementById("result").innerHTML = parser.parse(demoString).outputHtml;
+  }
+</script>
+
+</body>
+</html>
