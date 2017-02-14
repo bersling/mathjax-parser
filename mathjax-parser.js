@@ -38,7 +38,6 @@ var MathjaxParser = (function () {
                     delimiters: config.inlineMath,
                     replacements: config.inlineMathReplacement
                 }];
-            console.log(str, 1);
             mathConstants.forEach(function (type) {
                 type.delimiters.forEach(function (delim) {
                     var expression = _this.escapeRegExp(delim[0]) + "(.+?)" + _this.escapeRegExp(delim[1]);
@@ -47,7 +46,6 @@ var MathjaxParser = (function () {
                         _this.escapeRegexReplacementString(type.replacements[1]));
                 });
             });
-            console.log(str, 2);
             return str;
         };
         this.separateTextBrSuccessionsFromOtherNodesInChildren = function (node) {

@@ -54,8 +54,6 @@ class MathjaxParser {
       replacements: config.inlineMathReplacement
     }];
 
-    console.log(str,1)
-
     mathConstants.forEach(type => {
       type.delimiters.forEach(delim => {
         let expression = this.escapeRegExp(delim[0]) + "(.+?)" + this.escapeRegExp(delim[1]);
@@ -64,8 +62,6 @@ class MathjaxParser {
             this.escapeRegexReplacementString(type.replacements[1]));
       });
     });
-
-    console.log(str, 2);
 
     return str;
   };
