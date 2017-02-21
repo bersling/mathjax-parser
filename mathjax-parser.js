@@ -2,6 +2,7 @@ var MathjaxParser = (function () {
     function MathjaxParser() {
         var _this = this;
         this.parse = function (inputHtml, config) {
+            console.log(inputHtml, 0);
             config = config || {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -10,6 +11,7 @@ var MathjaxParser = (function () {
             };
             var body = document.createElement('body');
             body.innerHTML = inputHtml;
+            console.log(body.innerHTML, 1);
             _this.walkTheDOM(body, _this.mathjaxProcessorFactory(config));
             return {
                 outputHtml: body.innerHTML
@@ -49,13 +51,16 @@ var MathjaxParser = (function () {
             return str;
         };
         this.separateTextBrSuccessionsFromOtherNodesInChildren = function (node) {
+            console.log(node.innerHTML, 3);
             var children = $(node).contents();
+            console.log(3.5, children);
             var separatedNodes = [];
             if (children.length > 0) {
                 var first = children.get(0);
                 var oldType_1;
                 children.each(function (idx) {
                     var child = children.get(idx);
+                    console.log(4, idx, child, _this.getHtml(child), child);
                     var newType = _this.isTextOrBrNode(child) ? 'text-or-br' : 'other';
                     if (newType !== oldType_1) {
                         var nodeSubset = {
@@ -76,6 +81,7 @@ var MathjaxParser = (function () {
             return separatedNodes;
         };
         this.walkTheDOM = function (node, func) {
+            console.log(node.innerHTML, 2);
             func(node);
             node = node.firstChild;
             while (node) {
@@ -103,5 +109,7 @@ var MathjaxParser = (function () {
             return str.replace(/\$/g, "$$$$");
         };
     }
+    MathjaxParser.prototype.sanitize = function (str) {
+    };
     return MathjaxParser;
 }());

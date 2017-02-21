@@ -4,6 +4,8 @@ class MathjaxParser {
 
   public parse = (inputHtml: string, config?: MathjaxParserConfig): ParserResponse => {
 
+    console.log(inputHtml, 0);
+
     //set a default config
     config = config || {
           inlineMath: [['$','$'],['\\(','\\)']],
@@ -17,6 +19,7 @@ class MathjaxParser {
     body.innerHTML = inputHtml;
 
     //Walk the DOM applying the mathjax processor to each node
+    console.log(body.innerHTML, 1);
     this.walkTheDOM(body, this.mathjaxProcessorFactory(config));
 
     return {
@@ -72,7 +75,9 @@ class MathjaxParser {
   //    hello <br> friend          <strong>bu</strong>            bla
   // [{'text-or-br', [0,1,2]}       ,{'other', [3]},        {'text-or-br',[4}]
   private separateTextBrSuccessionsFromOtherNodesInChildren = (node: HTMLElement): NodeSubset[] => {
+    console.log(node.innerHTML, 3);
     let children = $(node).contents();
+    console.log(3.5, children);
     let separatedNodes: NodeSubset[] = [];
 
     if (children.length > 0) {
@@ -83,6 +88,7 @@ class MathjaxParser {
 
       children.each((idx:number) => {
         let child = children.get(idx);
+        console.log(4, idx, child, this.getHtml(child), child);
         let newType: string = this.isTextOrBrNode(child) ? 'text-or-br' : 'other';
         if (newType !== oldType) {
           let nodeSubset: NodeSubset = {
@@ -104,10 +110,13 @@ class MathjaxParser {
     return separatedNodes;
   };
 
+  private sanitize(str) {
 
+  }
 
   //DOM Helpers
   private walkTheDOM = (node, func) => {
+    console.log(node.innerHTML, 2);
     func(node);
     node = node.firstChild;
     while (node) {
@@ -125,6 +134,8 @@ class MathjaxParser {
     }
     return html
   };
+
+
 
   private isTextOrBrNode = (node: HTMLElement | Element) => {
     return node.nodeType === 3 || node.nodeName === 'BR';
