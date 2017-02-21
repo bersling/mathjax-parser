@@ -116,7 +116,6 @@ class MathjaxParser {
 
   //DOM Helpers
   private walkTheDOM = (node, func) => {
-    console.log(node.innerHTML, 2);
     func(node);
     node = node.firstChild;
     while (node) {
@@ -124,6 +123,77 @@ class MathjaxParser {
       node = node.nextSibling;
     }
   };
+
+  private walkTheDomAndOperateOnChildren = (node: Node, func) => {
+    var childNodes: NodeList = node.childNodes;
+    func(childNodes);
+    for (var i = 0; i < childNodes.length; i++) {
+      this.walkTheDomAndOperateOnChildren(childNodes[i], func);
+    }
+  };
+
+  private processNodeList = (nodeList: NodeList) => {
+    let allAdjacentTextOrBrNodes: MyRange[] = this.findAdjacentTextOrBrNodes(nodeList);
+    allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange) => {
+
+      //TODO: replace the matching $...$ in the nodes...
+      //either by concating nodes, then doing regex, then inserting the html2dom where old node was...
+
+      //only match $ and not \$!
+      //or by iterating through nodes, making a list like [1,1,3,4,5] of all $ occurences, then replacing those occurences
+
+      var inlineMathOccurences = [];
+      var displayMathOccurences = [];
+      for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+
+
+      }
+    })
+
+  };
+
+  private findAdjacentTextOrBrNodes = (nodeList: NodeList): MyRange[] => {
+    //value true if node is textOrBr, false otherwise
+    //example:
+    // hello <br> world <span>bla</span>
+    // would yield
+    // [true, true, true, false]
+    let textOrBrNodes: boolean[] = [];
+    for (let i: number = 0; i < nodeList.length; i++) {
+      let node: Node = nodeList[i];
+      this.isTextOrBrNode(node) ? textOrBrNodes.push(true) : textOrBrNodes.push(false);
+    }
+
+    //get array with ranges (arrays) of adjacentTextOrBrNodes
+    //example:
+    // hello <br> world <span>bla</span> that's cool
+    // would yield
+    // [[0,3],[4,5]]
+    let adjacentTextOrBrNodes: MyRange[] = [];
+    for (let i: number = 0; i < textOrBrNodes.length; i++) {
+      let isTextOrBrNode: boolean = textOrBrNodes[i];
+      if (isTextOrBrNode) {
+
+        //handle case if IS NOT adjacent: insert new array
+        if (adjacentTextOrBrNodes.length === 0 ||
+            adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end !== i) {
+          adjacentTextOrBrNodes.push({
+            start: i,
+            end: i+1
+          });
+        }
+
+        //handle case if IS adjacent: raise value by one
+        else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1][1] === i) {
+          ++adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end;
+        }
+
+      }
+    }
+    return adjacentTextOrBrNodes;
+  };
+
+
 
   private getHtml = (node: HTMLElement): string => {
     let html: string = "";
@@ -135,13 +205,9 @@ class MathjaxParser {
     return html
   };
 
-
-
-  private isTextOrBrNode = (node: HTMLElement | Element) => {
+  private isTextOrBrNode = (node: Node) => {
     return node.nodeType === 3 || node.nodeName === 'BR';
   };
-
-
 
   //Regex Helpers
   private escapeRegExp = (str: string) => {
@@ -163,4 +229,9 @@ interface NodeSubset {
   nodes: number[];
   nodeValues: string[];
   concated: string;
+}
+
+interface MyRange {
+  start: number;
+  end: number;
 }
