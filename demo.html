@@ -15,7 +15,10 @@
 
 <div id="demo">
   <p>I'd kill for something like a $$ cold beer $$</p>
-  <p> $Hello <br> world$, isn't it a sunny <strong> day <br> today? </strong> Cool beans. </p>
+  <p> $Hello <br> world$, isn't it a sunny <strong> day <br> today?</strong> Cool beans.</p>
+  <p>
+    This should <b>$not</b>$ be parsed, since one dollar-sign is in the bold-tag while the other dollar-sign is not.
+  </p>
 </div>
 
 <hr>
@@ -31,8 +34,8 @@
     var config = {
           inlineMath: [['$','$'],['\\(','\\)']],
           displayMath: [['$$','$$'],['\\[','\\]']],
-          inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
-          displayMathReplacement: ['<span class="display-math" style="color: blue">','</span>']
+          inlineMathReplacement: ['XXX', 'XXX'],
+          displayMathReplacement: ['YYY','YYY']
         }
 
     var parser = new MathjaxParser();
