@@ -57,6 +57,11 @@
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, 'First YYYtestZZZ');
 
+    //with less than sign
+    html ="<p>$&lt;x$</p>";
+    out = parser.parse(html, config).outputHtml;
+    assert.equal( out, '<p>XXX&lt;xXXX</p>');
+
   });
 
 })();
