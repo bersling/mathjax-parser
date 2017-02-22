@@ -34,6 +34,9 @@ class MathjaxParser {
 
   private processNodeList = (nodeList: NodeList) => {
     let allAdjacentTextOrBrNodes: MyRange<number>[] = this.findAdjacentTextOrBrNodes(nodeList);
+
+    console.log(allAdjacentTextOrBrNodes);
+
     allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange<number>) => {
 
       //TODO: block math
@@ -57,12 +60,12 @@ class MathjaxParser {
             const reStart = new RegExp("(" + this.escapeRegExp(grp[0]) + ")",'g');
             const reEnd = new RegExp("(" + this.escapeRegExp(grp[1]) + ")", 'g');
 
-
-
-            this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
+            this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
 
           }
         }
+
+        this.cleanOccurences(matchedDelimiterSets);
 
         //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
         matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
@@ -77,7 +80,8 @@ class MathjaxParser {
     //process children
     for (let i: number = 0; i < nodeList.length; i++) {
       let node: Node = nodeList[i];
-      this.processNodeList(node.childNodes);
+      //TODO: bb
+      //this.processNodeList(node.childNodes);
     }
 
   };
@@ -90,9 +94,7 @@ class MathjaxParser {
     this.replaceDelims(nodeList, grp, delimiterSet, true);
   };
 
-  private buildMatchedDelimiterSets = (reStart: RegExp, reEnd: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number) => {
-    this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
-    //buildOccurences could return somethin without an end, so postprocessing needs to be done
+  private cleanOccurences = (occurences: MyRange<NodeAndIndex>[]) => {
     if (occurences.length > 0) {
       if (!occurences[occurences.length - 1].end) {
         occurences.pop();
@@ -183,7 +185,7 @@ class MathjaxParser {
         this.searchEnd(reEnd, textContent, occurences, nodeNumber);
       }
     }
-  }
+  };
 
   private config: MathjaxParserConfig;
 
@@ -203,23 +205,25 @@ class MathjaxParser {
     //example:
     // hello <br> world <span>bla</span> that's cool
     // would yield
-    // [[0,3],[4,5]]
+    // [{start: 0, end: 3},{start: 4, end: 5}]
     let adjacentTextOrBrNodes: MyRange<number>[] = [];
     for (let i: number = 0; i < textOrBrNodes.length; i++) {
       let isTextOrBrNode: boolean = textOrBrNodes[i];
+
       if (isTextOrBrNode) {
 
-        //handle case if IS NOT adjacent: insert new array
+        //handle case if IS NOT ADJACENT MATCH: insert new array
         if (adjacentTextOrBrNodes.length === 0 ||
-            adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end !== i) {
+            adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end !== i
+        ) {
+
           adjacentTextOrBrNodes.push({
             start: i,
             end: i+1
           });
         }
-
-        //handle case if IS adjacent: raise value by one
-        else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1][1] === i) {
+        //handle case if IS ADJACENT MATCH: raise value by one
+        else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end === i) {
           ++adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end;
         }
 

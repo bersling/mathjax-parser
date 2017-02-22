@@ -11,7 +11,7 @@ QUnit.test( "Simple tests", function( assert ) {
   var html;
   var out;
 
-
+/*
   //simple inline
   html ="First $test$";
   out = parser.parse(html, config).outputHtml;
@@ -27,12 +27,22 @@ QUnit.test( "Simple tests", function( assert ) {
   out = parser.parse(html, config).outputHtml;
   assert.equal( out, html);
 
-
-  //mixed delims
+  //mixed delims & children
   html ="I $thought$ <span>\\(it's great\\)</span>";
   out = parser.parse(html, config).outputHtml;
   assert.equal( out, "I XXXthoughtXXX <span>XXXit's greatXXX</span>");
+*/
 
+  //with br
+  html ="Hello $\\frac a b = c <br> =d$";
+  out = parser.parse(html, config).outputHtml;
+  assert.equal( out, "Hello XXX\\frac a b = c <br> =dXXX");
+
+
+  //with br and edge case $
+  //html ="$How <br> are <br> you$";
+  //out = parser.parse(html, config).outputHtml;
+  //assert.equal( out, "XXXHow <br> are <br> youXXX");
 
 
 

@@ -24,6 +24,7 @@ var MathjaxParser = (function () {
         };
         this.processNodeList = function (nodeList) {
             var allAdjacentTextOrBrNodes = _this.findAdjacentTextOrBrNodes(nodeList);
+            console.log(allAdjacentTextOrBrNodes);
             allAdjacentTextOrBrNodes.forEach(function (textOrBrNodeSet) {
                 _this.config.inlineMath.forEach(function (grp) {
                     var matchedDelimiterSets = [];
@@ -33,9 +34,10 @@ var MathjaxParser = (function () {
                             var textContent = node.textContent;
                             var reStart = new RegExp("(" + _this.escapeRegExp(grp[0]) + ")", 'g');
                             var reEnd = new RegExp("(" + _this.escapeRegExp(grp[1]) + ")", 'g');
-                            _this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
+                            _this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
                         }
                     }
+                    _this.cleanOccurences(matchedDelimiterSets);
                     matchedDelimiterSets = matchedDelimiterSets.reverse();
                     matchedDelimiterSets.forEach(function (delimiterSet) {
                         _this.replaceAllDelims(grp, delimiterSet, nodeList);
@@ -44,15 +46,13 @@ var MathjaxParser = (function () {
             });
             for (var i = 0; i < nodeList.length; i++) {
                 var node = nodeList[i];
-                _this.processNodeList(node.childNodes);
             }
         };
         this.replaceAllDelims = function (grp, delimiterSet, nodeList) {
             _this.replaceDelims(nodeList, grp, delimiterSet, false);
             _this.replaceDelims(nodeList, grp, delimiterSet, true);
         };
-        this.buildMatchedDelimiterSets = function (reStart, reEnd, textContent, occurences, nodeNumber) {
-            _this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+        this.cleanOccurences = function (occurences) {
             if (occurences.length > 0) {
                 if (!occurences[occurences.length - 1].end) {
                     occurences.pop();
@@ -136,7 +136,7 @@ var MathjaxParser = (function () {
                             end: i + 1
                         });
                     }
-                    else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1][1] === i) {
+                    else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end === i) {
                         ++adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end;
                     }
                 }
