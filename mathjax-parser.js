@@ -8,6 +8,11 @@ var MathjaxParser = (function () {
                 inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
                 displayMathReplacement: ['<span class="display-math" style="color: blue">', '</span>']
             };
+            _this.executionOrder = _this.determineExecutionOrder();
+            if (_this.executionOrder.valueOf() === ExecutionOrder.CONFLICT) {
+                console.log("Sorry, the provided config isn't supported. \"inlineMath.contains(displayMath)\" AND \"displayMath.contains(inlineMath)\" not supported");
+                return;
+            }
             var body = document.createElement('body');
             body.innerHTML = inputHtml;
             _this.processNodeList(body.childNodes);
@@ -25,32 +30,23 @@ var MathjaxParser = (function () {
         this.processNodeList = function (nodeList) {
             var allAdjacentTextOrBrNodes = _this.findAdjacentTextOrBrNodes(nodeList);
             allAdjacentTextOrBrNodes.forEach(function (textOrBrNodeSet) {
-                _this.config.inlineMath.forEach(function (grp) {
-                    var matchedDelimiterSets = [];
-                    for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
-                        var node = nodeList[i];
-                        if (node.nodeType === 3) {
-                            var textContent = node.textContent;
-                            var reStart = new RegExp("(" + _this.escapeRegExp(grp[0]) + ")", 'g');
-                            var reEnd = new RegExp("(" + _this.escapeRegExp(grp[1]) + ")", 'g');
-                            _this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
-                        }
-                    }
-                    _this.cleanOccurences(matchedDelimiterSets);
-                    matchedDelimiterSets = matchedDelimiterSets.reverse();
-                    matchedDelimiterSets.forEach(function (delimiterSet) {
-                        _this.replaceAllDelims(grp, delimiterSet, nodeList);
-                    });
-                });
+                if (_this.executionOrder.valueOf() === ExecutionOrder.INLINE_FIRST) {
+                    _this.iterateMath('inline', textOrBrNodeSet, nodeList);
+                    _this.iterateMath('display', textOrBrNodeSet, nodeList);
+                }
+                else {
+                    _this.iterateMath('display', textOrBrNodeSet, nodeList);
+                    _this.iterateMath('inline', textOrBrNodeSet, nodeList);
+                }
             });
             for (var i = 0; i < nodeList.length; i++) {
                 var node = nodeList[i];
                 _this.processNodeList(node.childNodes);
             }
         };
-        this.replaceAllDelims = function (grp, delimiterSet, nodeList) {
-            _this.replaceDelims(nodeList, grp, delimiterSet, false);
-            _this.replaceDelims(nodeList, grp, delimiterSet, true);
+        this.replaceAllDelims = function (grp, delimiterSet, nodeList, type) {
+            _this.replaceDelims(nodeList, grp, delimiterSet, false, type);
+            _this.replaceDelims(nodeList, grp, delimiterSet, true, type);
         };
         this.cleanOccurences = function (occurences) {
             if (occurences.length > 0) {
@@ -59,13 +55,13 @@ var MathjaxParser = (function () {
                 }
             }
         };
-        this.replaceDelims = function (nodeList, grp, delimiterSet, isStart) {
+        this.replaceDelims = function (nodeList, grp, delimiterSet, isStart, type) {
             var oldDelimLength = grp[isStart ? 0 : 1].length;
             var nodeAndIndex = isStart ? delimiterSet.start : delimiterSet.end;
             var nodeVal = nodeList[nodeAndIndex.nodeNumber].nodeValue;
             nodeList[nodeAndIndex.nodeNumber].nodeValue =
                 nodeVal.substr(0, nodeAndIndex.index) +
-                    _this.config.inlineMathReplacement[isStart ? 0 : 1] +
+                    _this.config[type + 'MathReplacement'][isStart ? 0 : 1] +
                     nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
         };
         this.buildOccurences = function (reStart, reEnd, textContent, occurences, nodeNumber) {
@@ -153,5 +149,52 @@ var MathjaxParser = (function () {
             return str.replace(/\$/g, "$$$$");
         };
     }
+    MathjaxParser.prototype.determineExecutionOrder = function () {
+        var _this = this;
+        var order = ExecutionOrder.DISPLAY_FIRST;
+        this.config.inlineMath.forEach(function (inlineGrp) {
+            _this.config.displayMath.forEach(function (displayGrp) {
+                if (inlineGrp[0].indexOf(displayGrp[0]) > -1) {
+                    order = ExecutionOrder.INLINE_FIRST;
+                }
+            });
+        });
+        if (order.valueOf() === ExecutionOrder.INLINE_FIRST.valueOf()) {
+            this.config.inlineMath.forEach(function (inlineGrp) {
+                _this.config.displayMath.forEach(function (displayGrp) {
+                    if (displayGrp[0].indexOf(inlineGrp[0]) > -1) {
+                        order = ExecutionOrder.CONFLICT;
+                    }
+                });
+            });
+        }
+        return order;
+    };
+    MathjaxParser.prototype.iterateMath = function (type, textOrBrNodeSet, nodeList) {
+        var _this = this;
+        this.config[type + 'Math'].forEach(function (grp) {
+            var matchedDelimiterSets = [];
+            for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+                var node = nodeList[i];
+                if (node.nodeType === 3) {
+                    var textContent = node.textContent;
+                    var reStart = new RegExp("(" + _this.escapeRegExp(grp[0]) + ")", 'g');
+                    var reEnd = new RegExp("(" + _this.escapeRegExp(grp[1]) + ")", 'g');
+                    _this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
+                }
+            }
+            _this.cleanOccurences(matchedDelimiterSets);
+            matchedDelimiterSets = matchedDelimiterSets.reverse();
+            matchedDelimiterSets.forEach(function (delimiterSet) {
+                _this.replaceAllDelims(grp, delimiterSet, nodeList, type);
+            });
+        });
+    };
     return MathjaxParser;
 }());
+var ExecutionOrder;
+(function (ExecutionOrder) {
+    ExecutionOrder[ExecutionOrder["INLINE_FIRST"] = 0] = "INLINE_FIRST";
+    ExecutionOrder[ExecutionOrder["DISPLAY_FIRST"] = 1] = "DISPLAY_FIRST";
+    ExecutionOrder[ExecutionOrder["CONFLICT"] = 2] = "CONFLICT";
+})(ExecutionOrder || (ExecutionOrder = {}));
