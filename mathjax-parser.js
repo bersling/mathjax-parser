@@ -24,7 +24,6 @@ var MathjaxParser = (function () {
         };
         this.processNodeList = function (nodeList) {
             var allAdjacentTextOrBrNodes = _this.findAdjacentTextOrBrNodes(nodeList);
-            console.log(allAdjacentTextOrBrNodes);
             allAdjacentTextOrBrNodes.forEach(function (textOrBrNodeSet) {
                 _this.config.inlineMath.forEach(function (grp) {
                     var matchedDelimiterSets = [];
@@ -46,6 +45,7 @@ var MathjaxParser = (function () {
             });
             for (var i = 0; i < nodeList.length; i++) {
                 var node = nodeList[i];
+                _this.processNodeList(node.childNodes);
             }
         };
         this.replaceAllDelims = function (grp, delimiterSet, nodeList) {

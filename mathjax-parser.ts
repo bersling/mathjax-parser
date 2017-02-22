@@ -35,8 +35,6 @@ class MathjaxParser {
   private processNodeList = (nodeList: NodeList) => {
     let allAdjacentTextOrBrNodes: MyRange<number>[] = this.findAdjacentTextOrBrNodes(nodeList);
 
-    console.log(allAdjacentTextOrBrNodes);
-
     allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange<number>) => {
 
       //TODO: block math
@@ -80,8 +78,7 @@ class MathjaxParser {
     //process children
     for (let i: number = 0; i < nodeList.length; i++) {
       let node: Node = nodeList[i];
-      //TODO: bb
-      //this.processNodeList(node.childNodes);
+      this.processNodeList(node.childNodes);
     }
 
   };
