@@ -4,10 +4,8 @@ class MathjaxParser {
 
   public parse = (inputHtml: string, config?: MathjaxParserConfig): ParserResponse => {
 
-    console.log(inputHtml, 0);
-
     //set a default config
-    config = config || {
+    this.config = config || {
           inlineMath: [['$','$'],['\\(','\\)']],
           displayMath: [['$$','$$'],['\\[','\\]']],
           inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
@@ -18,110 +16,12 @@ class MathjaxParser {
     let body: HTMLElement = document.createElement('body');
     body.innerHTML = inputHtml;
 
-    //Walk the DOM applying the mathjax processor to each node
-    console.log(body.innerHTML, 1);
-    this.walkTheDOM(body, this.mathjaxProcessorFactory(config));
+    this.processNodeList(body.childNodes);
 
     return {
       outputHtml: body.innerHTML
     };
-  };
 
-  private mathjaxProcessorFactory = (config: MathjaxParserConfig) => {
-    return (node: HTMLElement) => {
-      let separatedNodes: NodeSubset[] = this.separateTextBrSuccessionsFromOtherNodesInChildren(node);
-
-      let separatedNodesAsStrings: string[] = [];
-      separatedNodes.forEach(nodeBundle => {
-        let str = nodeBundle.concated;
-
-        if (nodeBundle.type === 'text-or-br') {
-          //could contain mathjax!
-          str = this.parseMathjaxFromTextBrNodeSuccessionString(str, config);
-        }
-        separatedNodesAsStrings.push(str);
-      });
-
-      let newInnerHtml = separatedNodesAsStrings.join("");
-      node.innerHTML = newInnerHtml;
-    }
-  };
-
-  private parseMathjaxFromTextBrNodeSuccessionString = (str: string, config: MathjaxParserConfig): string => {
-
-    let mathConstants = [{
-      delimiters: config.displayMath,
-      replacements: config.displayMathReplacement
-    }, {
-      delimiters: config.inlineMath,
-      replacements: config.inlineMathReplacement
-    }];
-
-    mathConstants.forEach(type => {
-      type.delimiters.forEach(delim => {
-        let expression = this.escapeRegExp(delim[0]) + "(.+?)" + this.escapeRegExp(delim[1]);
-        let rx: RegExp = new RegExp(expression, 'g');
-        str = str.replace(rx, this.escapeRegexReplacementString(type.replacements[0]) + "$1" +
-            this.escapeRegexReplacementString(type.replacements[1]));
-      });
-    });
-
-    return str;
-  };
-
-
-  //separates text-br-successions from other nodes, keeps the order
-  //example "hello <br> friend <strong>bu</strong> bla" will be
-  //    hello <br> friend          <strong>bu</strong>            bla
-  // [{'text-or-br', [0,1,2]}       ,{'other', [3]},        {'text-or-br',[4}]
-  private separateTextBrSuccessionsFromOtherNodesInChildren = (node: HTMLElement): NodeSubset[] => {
-    console.log(node.innerHTML, 3);
-    let children = $(node).contents();
-    console.log(3.5, children);
-    let separatedNodes: NodeSubset[] = [];
-
-    if (children.length > 0) {
-      let first = children.get(0);
-
-      //init
-      let oldType: string;
-
-      children.each((idx:number) => {
-        let child = children.get(idx);
-        console.log(4, idx, child, this.getHtml(child), child);
-        let newType: string = this.isTextOrBrNode(child) ? 'text-or-br' : 'other';
-        if (newType !== oldType) {
-          let nodeSubset: NodeSubset = {
-            type: newType,
-            nodes: <number[]>[],
-            nodeValues: <string[]>[],
-            concated: ""
-          };
-          separatedNodes.push(nodeSubset);
-        }
-        oldType = newType;
-        let current: NodeSubset = separatedNodes[separatedNodes.length - 1];
-        current.nodes.push(idx);
-        current.nodeValues.push(this.getHtml(child));
-        current.concated += this.getHtml(child);
-      });
-
-    }
-    return separatedNodes;
-  };
-
-  private sanitize(str) {
-
-  }
-
-  //DOM Helpers
-  private walkTheDOM = (node, func) => {
-    func(node);
-    node = node.firstChild;
-    while (node) {
-      this.walkTheDOM(node, func);
-      node = node.nextSibling;
-    }
   };
 
   private walkTheDomAndOperateOnChildren = (node: Node, func) => {
@@ -133,26 +33,156 @@ class MathjaxParser {
   };
 
   private processNodeList = (nodeList: NodeList) => {
-    let allAdjacentTextOrBrNodes: MyRange[] = this.findAdjacentTextOrBrNodes(nodeList);
-    allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange) => {
+    let allAdjacentTextOrBrNodes: MyRange<number>[] = this.findAdjacentTextOrBrNodes(nodeList);
+    allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange<number>) => {
 
-      //TODO: replace the matching $...$ in the nodes...
-      //either by concating nodes, then doing regex, then inserting the html2dom where old node was...
+      //TODO: block math
 
-      //only match $ and not \$!
-      //or by iterating through nodes, making a list like [1,1,3,4,5] of all $ occurences, then replacing those occurences
+      //Iterate through all inline delimiters, trying to find matching delimiters
+      this.config.inlineMath.forEach(grp => {
 
-      var inlineMathOccurences = [];
-      var displayMathOccurences = [];
-      for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+        let matchedDelimiterSets: MyRange<NodeAndIndex>[] = [];
 
+        for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+          let node: Node = nodeList[i];
 
-      }
+          //for the text nodes (type 3), other nodes dont matter
+          if (node.nodeType === 3) {
+
+            const textContent: string = node.textContent;
+
+            //find a matches
+            //TODO: correct escapes for $ special case...
+            //const pattern = grp[0] !== "$" ?  "(" + this.escapeRegExp(grp[0]) + ")" : "([^\\]|^)(\$)";
+            const reStart = new RegExp("(" + this.escapeRegExp(grp[0]) + ")",'g');
+            const reEnd = new RegExp("(" + this.escapeRegExp(grp[1]) + ")", 'g');
+
+            this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
+
+          }
+        }
+
+        console.log(matchedDelimiterSets);
+
+        //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
+        matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
+        matchedDelimiterSets.forEach((delimiterSet: MyRange<NodeAndIndex>) => {
+          this.replaceAllDelims(grp, delimiterSet, nodeList);
+        });
+
+      });
+
     })
 
   };
 
-  private findAdjacentTextOrBrNodes = (nodeList: NodeList): MyRange[] => {
+  private replaceAllDelims = (grp, delimiterSet: MyRange<NodeAndIndex>, nodeList: NodeList ) => {
+    //handle end FIRST
+    this.replaceDelims(nodeList, grp, delimiterSet,  false);
+
+    //handle start
+    this.replaceDelims(nodeList, grp, delimiterSet, true);
+  };
+
+  private buildMatchedDelimiterSets = (reStart: RegExp, reEnd: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number) => {
+    this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+    //buildOccurences could return somethin without an end, so postprocessing needs to be done
+    if (occurences.length > 0) {
+      if (!occurences[occurences.length - 1].end) {
+        occurences.pop();
+      }
+    }
+  };
+
+  private replaceDelims = (nodeList: NodeList, grp, delimiterSet: MyRange<NodeAndIndex> , isStart: boolean) => {
+
+    const oldDelimLength = grp[isStart ? 0 : 1].length;
+    const nodeAndIndex = isStart ? delimiterSet.start : delimiterSet.end;
+
+    const nodeVal = nodeList[nodeAndIndex.nodeNumber].nodeValue;
+
+    //insert the new delimiter while removing the old delimiter
+    nodeList[nodeAndIndex.nodeNumber].nodeValue =
+
+        //string start
+        nodeVal.substr(0, nodeAndIndex.index) +
+            //replacement string
+        this.config.inlineMathReplacement[isStart ? 0 : 1] +
+            //string rest
+        nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
+
+    console.log(nodeList[0].nodeValue);
+  };
+
+
+  //fills occurences with matched start/end groups
+  private buildOccurences = (reStart: RegExp, reEnd: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number) => {
+
+    let matchFound = false;
+
+    //in case it's a starting match
+    if (occurences.length == 0 || !occurences[occurences.length - 1].start) {
+      matchFound = this.searchStart(reStart, textContent, occurences, nodeNumber);
+      if (matchFound) {
+        this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+      }
+    }
+
+    //find an end delimiter matching the start delimiter
+    else {
+      matchFound = this.searchEnd(reEnd, textContent, occurences, nodeNumber);
+      if (matchFound) {
+        this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+      }
+    }
+
+  }
+
+  private searchStart = (reStart: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
+    //find a starting delimiter larger than the last end delimiter
+    let m;
+    if (m = reStart.exec(textContent)) {
+      if(occurences.length === 0 ||
+          occurences[occurences.length - 1].end.nodeNumber < nodeNumber ||
+          occurences[occurences.length - 1].end.index < m.index
+      ) {
+        occurences.push({
+          start: {
+            nodeNumber: nodeNumber,
+            index: m.index
+          },
+          end: undefined
+        });
+        return true;
+      } else {
+        //continue search if something was found, but it's too low
+        this.searchEnd(reStart, textContent, occurences, nodeNumber);
+      }
+
+    }
+  }
+
+  private searchEnd = (reEnd: RegExp,  textContent: string, occurences:MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
+    //find an end delimiter larger than startDelimiter
+    var m;
+    if(m = reEnd.exec(textContent)) {
+      if (occurences[occurences.length - 1].start.nodeNumber < nodeNumber ||
+          occurences[occurences.length - 1].start.index < m.index) {
+        occurences[occurences.length - 1].end = {
+          nodeNumber: nodeNumber,
+          index: m.index
+        }
+        return true;
+      } else {
+        //continue search if something was found, but it's too low
+        this.searchEnd(reEnd, textContent, occurences, nodeNumber);
+      }
+    }
+  }
+
+  private config: MathjaxParserConfig;
+
+  private findAdjacentTextOrBrNodes = (nodeList: NodeList): MyRange<number>[] => {
     //value true if node is textOrBr, false otherwise
     //example:
     // hello <br> world <span>bla</span>
@@ -169,7 +199,7 @@ class MathjaxParser {
     // hello <br> world <span>bla</span> that's cool
     // would yield
     // [[0,3],[4,5]]
-    let adjacentTextOrBrNodes: MyRange[] = [];
+    let adjacentTextOrBrNodes: MyRange<number>[] = [];
     for (let i: number = 0; i < textOrBrNodes.length; i++) {
       let isTextOrBrNode: boolean = textOrBrNodes[i];
       if (isTextOrBrNode) {
@@ -195,15 +225,6 @@ class MathjaxParser {
 
 
 
-  private getHtml = (node: HTMLElement): string => {
-    let html: string = "";
-    if (node.nodeType === 3) {
-      html =  node.nodeValue;
-    } else {
-      html = node.outerHTML;
-    }
-    return html
-  };
 
   private isTextOrBrNode = (node: Node) => {
     return node.nodeType === 3 || node.nodeName === 'BR';
@@ -231,7 +252,19 @@ interface NodeSubset {
   concated: string;
 }
 
-interface MyRange {
-  start: number;
-  end: number;
+interface MyRange<T> {
+  start: T;
+  end: T;
 }
+interface NodeAndIndex {
+  nodeNumber: number;
+  index: number;
+}
+
+interface MathjaxParserConfig {
+  inlineMath: string[][]; //e.g. [['$','$'],['\\(','\\)']],
+  displayMath: string[][]; //e.g. [['$$','$$'],['\\[','\\]']],
+  inlineMathReplacement: string[]; //e.g. ['<span class="inline-math">', '</span>']
+  displayMathReplacement: string[] // e.g. ['<span class="display-math">','</span>']
+}
+

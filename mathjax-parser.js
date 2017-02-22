@@ -2,8 +2,7 @@ var MathjaxParser = (function () {
     function MathjaxParser() {
         var _this = this;
         this.parse = function (inputHtml, config) {
-            console.log(inputHtml, 0);
-            config = config || {
+            _this.config = config || {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
@@ -11,93 +10,136 @@ var MathjaxParser = (function () {
             };
             var body = document.createElement('body');
             body.innerHTML = inputHtml;
-            console.log(body.innerHTML, 1);
-            _this.walkTheDOM(body, _this.mathjaxProcessorFactory(config));
+            _this.processNodeList(body.childNodes);
             return {
                 outputHtml: body.innerHTML
             };
         };
-        this.mathjaxProcessorFactory = function (config) {
-            return function (node) {
-                var separatedNodes = _this.separateTextBrSuccessionsFromOtherNodesInChildren(node);
-                var separatedNodesAsStrings = [];
-                separatedNodes.forEach(function (nodeBundle) {
-                    var str = nodeBundle.concated;
-                    if (nodeBundle.type === 'text-or-br') {
-                        str = _this.parseMathjaxFromTextBrNodeSuccessionString(str, config);
-                    }
-                    separatedNodesAsStrings.push(str);
-                });
-                var newInnerHtml = separatedNodesAsStrings.join("");
-                node.innerHTML = newInnerHtml;
-            };
+        this.walkTheDomAndOperateOnChildren = function (node, func) {
+            var childNodes = node.childNodes;
+            func(childNodes);
+            for (var i = 0; i < childNodes.length; i++) {
+                _this.walkTheDomAndOperateOnChildren(childNodes[i], func);
+            }
         };
-        this.parseMathjaxFromTextBrNodeSuccessionString = function (str, config) {
-            var mathConstants = [{
-                    delimiters: config.displayMath,
-                    replacements: config.displayMathReplacement
-                }, {
-                    delimiters: config.inlineMath,
-                    replacements: config.inlineMathReplacement
-                }];
-            mathConstants.forEach(function (type) {
-                type.delimiters.forEach(function (delim) {
-                    var expression = _this.escapeRegExp(delim[0]) + "(.+?)" + _this.escapeRegExp(delim[1]);
-                    var rx = new RegExp(expression, 'g');
-                    str = str.replace(rx, _this.escapeRegexReplacementString(type.replacements[0]) + "$1" +
-                        _this.escapeRegexReplacementString(type.replacements[1]));
+        this.processNodeList = function (nodeList) {
+            var allAdjacentTextOrBrNodes = _this.findAdjacentTextOrBrNodes(nodeList);
+            allAdjacentTextOrBrNodes.forEach(function (textOrBrNodeSet) {
+                _this.config.inlineMath.forEach(function (grp) {
+                    var matchedDelimiterSets = [];
+                    for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+                        var node = nodeList[i];
+                        if (node.nodeType === 3) {
+                            var textContent = node.textContent;
+                            var reStart = new RegExp("(" + _this.escapeRegExp(grp[0]) + ")", 'g');
+                            var reEnd = new RegExp("(" + _this.escapeRegExp(grp[1]) + ")", 'g');
+                            _this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
+                        }
+                    }
+                    console.log(matchedDelimiterSets);
+                    matchedDelimiterSets = matchedDelimiterSets.reverse();
+                    matchedDelimiterSets.forEach(function (delimiterSet) {
+                        _this.replaceAllDelims(grp, delimiterSet, nodeList);
+                    });
                 });
             });
-            return str;
         };
-        this.separateTextBrSuccessionsFromOtherNodesInChildren = function (node) {
-            console.log(node.innerHTML, 3);
-            var children = $(node).contents();
-            console.log(3.5, children);
-            var separatedNodes = [];
-            if (children.length > 0) {
-                var first = children.get(0);
-                var oldType_1;
-                children.each(function (idx) {
-                    var child = children.get(idx);
-                    console.log(4, idx, child, _this.getHtml(child), child);
-                    var newType = _this.isTextOrBrNode(child) ? 'text-or-br' : 'other';
-                    if (newType !== oldType_1) {
-                        var nodeSubset = {
-                            type: newType,
-                            nodes: [],
-                            nodeValues: [],
-                            concated: ""
-                        };
-                        separatedNodes.push(nodeSubset);
-                    }
-                    oldType_1 = newType;
-                    var current = separatedNodes[separatedNodes.length - 1];
-                    current.nodes.push(idx);
-                    current.nodeValues.push(_this.getHtml(child));
-                    current.concated += _this.getHtml(child);
-                });
-            }
-            return separatedNodes;
+        this.replaceAllDelims = function (grp, delimiterSet, nodeList) {
+            _this.replaceDelims(nodeList, grp, delimiterSet, false);
+            _this.replaceDelims(nodeList, grp, delimiterSet, true);
         };
-        this.walkTheDOM = function (node, func) {
-            console.log(node.innerHTML, 2);
-            func(node);
-            node = node.firstChild;
-            while (node) {
-                _this.walkTheDOM(node, func);
-                node = node.nextSibling;
+        this.buildMatchedDelimiterSets = function (reStart, reEnd, textContent, occurences, nodeNumber) {
+            _this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+            if (occurences.length > 0) {
+                if (!occurences[occurences.length - 1].end) {
+                    occurences.pop();
+                }
             }
         };
-        this.getHtml = function (node) {
-            var html = "";
-            if (node.nodeType === 3) {
-                html = node.nodeValue;
+        this.replaceDelims = function (nodeList, grp, delimiterSet, isStart) {
+            var oldDelimLength = grp[isStart ? 0 : 1].length;
+            var nodeAndIndex = isStart ? delimiterSet.start : delimiterSet.end;
+            var nodeVal = nodeList[nodeAndIndex.nodeNumber].nodeValue;
+            nodeList[nodeAndIndex.nodeNumber].nodeValue =
+                nodeVal.substr(0, nodeAndIndex.index) +
+                    _this.config.inlineMathReplacement[isStart ? 0 : 1] +
+                    nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
+            console.log(nodeList[0].nodeValue);
+        };
+        this.buildOccurences = function (reStart, reEnd, textContent, occurences, nodeNumber) {
+            var matchFound = false;
+            if (occurences.length == 0 || !occurences[occurences.length - 1].start) {
+                matchFound = _this.searchStart(reStart, textContent, occurences, nodeNumber);
+                if (matchFound) {
+                    _this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+                }
             }
             else {
-                html = node.outerHTML;
+                matchFound = _this.searchEnd(reEnd, textContent, occurences, nodeNumber);
+                if (matchFound) {
+                    _this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
+                }
             }
-            return html;
+        };
+        this.searchStart = function (reStart, textContent, occurences, nodeNumber) {
+            var m;
+            if (m = reStart.exec(textContent)) {
+                if (occurences.length === 0 ||
+                    occurences[occurences.length - 1].end.nodeNumber < nodeNumber ||
+                    occurences[occurences.length - 1].end.index < m.index) {
+                    occurences.push({
+                        start: {
+                            nodeNumber: nodeNumber,
+                            index: m.index
+                        },
+                        end: undefined
+                    });
+                    return true;
+                }
+                else {
+                    _this.searchEnd(reStart, textContent, occurences, nodeNumber);
+                }
+            }
+        };
+        this.searchEnd = function (reEnd, textContent, occurences, nodeNumber) {
+            var m;
+            if (m = reEnd.exec(textContent)) {
+                if (occurences[occurences.length - 1].start.nodeNumber < nodeNumber ||
+                    occurences[occurences.length - 1].start.index < m.index) {
+                    occurences[occurences.length - 1].end = {
+                        nodeNumber: nodeNumber,
+                        index: m.index
+                    };
+                    return true;
+                }
+                else {
+                    _this.searchEnd(reEnd, textContent, occurences, nodeNumber);
+                }
+            }
+        };
+        this.findAdjacentTextOrBrNodes = function (nodeList) {
+            var textOrBrNodes = [];
+            for (var i = 0; i < nodeList.length; i++) {
+                var node = nodeList[i];
+                _this.isTextOrBrNode(node) ? textOrBrNodes.push(true) : textOrBrNodes.push(false);
+            }
+            var adjacentTextOrBrNodes = [];
+            for (var i = 0; i < textOrBrNodes.length; i++) {
+                var isTextOrBrNode = textOrBrNodes[i];
+                if (isTextOrBrNode) {
+                    if (adjacentTextOrBrNodes.length === 0 ||
+                        adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end !== i) {
+                        adjacentTextOrBrNodes.push({
+                            start: i,
+                            end: i + 1
+                        });
+                    }
+                    else if (adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1][1] === i) {
+                        ++adjacentTextOrBrNodes[adjacentTextOrBrNodes.length - 1].end;
+                    }
+                }
+            }
+            return adjacentTextOrBrNodes;
         };
         this.isTextOrBrNode = function (node) {
             return node.nodeType === 3 || node.nodeName === 'BR';
@@ -109,7 +151,5 @@ var MathjaxParser = (function () {
             return str.replace(/\$/g, "$$$$");
         };
     }
-    MathjaxParser.prototype.sanitize = function (str) {
-    };
     return MathjaxParser;
 }());
