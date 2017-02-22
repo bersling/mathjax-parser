@@ -36,13 +36,16 @@ var MathjaxParser = (function () {
                             _this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
                         }
                     }
-                    console.log(matchedDelimiterSets);
                     matchedDelimiterSets = matchedDelimiterSets.reverse();
                     matchedDelimiterSets.forEach(function (delimiterSet) {
                         _this.replaceAllDelims(grp, delimiterSet, nodeList);
                     });
                 });
             });
+            for (var i = 0; i < nodeList.length; i++) {
+                var node = nodeList[i];
+                _this.processNodeList(node.childNodes);
+            }
         };
         this.replaceAllDelims = function (grp, delimiterSet, nodeList) {
             _this.replaceDelims(nodeList, grp, delimiterSet, false);
@@ -64,7 +67,6 @@ var MathjaxParser = (function () {
                 nodeVal.substr(0, nodeAndIndex.index) +
                     _this.config.inlineMathReplacement[isStart ? 0 : 1] +
                     nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
-            console.log(nodeList[0].nodeValue);
         };
         this.buildOccurences = function (reStart, reEnd, textContent, occurences, nodeNumber) {
             var matchFound = false;

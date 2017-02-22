@@ -57,12 +57,12 @@ class MathjaxParser {
             const reStart = new RegExp("(" + this.escapeRegExp(grp[0]) + ")",'g');
             const reEnd = new RegExp("(" + this.escapeRegExp(grp[1]) + ")", 'g');
 
+
+
             this.buildMatchedDelimiterSets(reStart, reEnd, textContent, matchedDelimiterSets, i);
 
           }
         }
-
-        console.log(matchedDelimiterSets);
 
         //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
         matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
@@ -72,7 +72,13 @@ class MathjaxParser {
 
       });
 
-    })
+    });
+
+    //process children
+    for (let i: number = 0; i < nodeList.length; i++) {
+      let node: Node = nodeList[i];
+      this.processNodeList(node.childNodes);
+    }
 
   };
 
@@ -111,7 +117,6 @@ class MathjaxParser {
             //string rest
         nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
 
-    console.log(nodeList[0].nodeValue);
   };
 
 
