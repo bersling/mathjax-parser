@@ -29,8 +29,8 @@ var parser = new MathjaxParser();
 var config = {
           inlineMath: [['$','$'],['\\(','\\)']],
           displayMath: [['$$','$$'],['\\[','\\]']],
-          inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
-          displayMathReplacement: ['<span class="display-math" style="color: blue">','</span>']
+          inlineMathReplacement: ['XXX', 'XXX'],
+          displayMathReplacement: ['YYY','ZZZ']
         }
 
 parser.parse(demoString, config).outputHtml;
