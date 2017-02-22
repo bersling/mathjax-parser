@@ -1,5 +1,3 @@
-declare var $;
-
 class MathjaxParser {
 
   public parse = (inputHtml: string, config?: MathjaxParserConfig): ParserResponse => {
