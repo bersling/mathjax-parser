@@ -1,6 +1,5 @@
 QUnit.test( "Simple tests", function( assert ) {
 
-
   var config = {
     inlineMath: [['$','$'],['\\(','\\)']],
     displayMath: [['$$','$$'],['\\[','\\]']],
@@ -10,7 +9,6 @@ QUnit.test( "Simple tests", function( assert ) {
   var parser = new MathjaxParser();
   var html;
   var out;
-
 
   //simple inline
   html ="First $test$";
@@ -27,24 +25,25 @@ QUnit.test( "Simple tests", function( assert ) {
   out = parser.parse(html, config).outputHtml;
   assert.equal( out, html);
 
-  //mixed delims & children
-  html ="I $thought$ <span>\\(it's great\\)</span>";
+  //mixed delims
+  html ="I $thought$ that \\(it's great\\)";
   out = parser.parse(html, config).outputHtml;
-  assert.equal( out, "I XXXthoughtXXX <span>XXXit's greatXXX</span>");
-
+  assert.equal( out, "I XXXthoughtXXX that XXXit's greatXXX");
 
   //with br
   html ="Hello $\\frac a b = c <br> =d$";
   out = parser.parse(html, config).outputHtml;
   assert.equal( out, "Hello XXX\\frac a b = c <br> =dXXX");
 
+  //$ on edges
+  html = "$How you$";
+  out = parser.parse(html, config).outputHtml;
+  assert.equal( out, "XXXHow youXXX");
 
-  //with br and edge case $
-  //html ="$How <br> are <br> you$";
-  //out = parser.parse(html, config).outputHtml;
-  //assert.equal( out, "XXXHow <br> are <br> youXXX");
-
-
+  //children
+  html ="I $thought$ <span>\\(it's great\\) however <b>$bla$</b> </span>";
+  out = parser.parse(html, config).outputHtml;
+  assert.equal( out, "I XXXthoughtXXX <span>XXXit's greatXXX however <b>XXXblaXXX</b> </span>");
 
 
   /*
