@@ -6,5 +6,5 @@ npm-debug.log
 
 # ./dist/mathjax-parser.js
 # ./dist/mathjax-parser.map.js
-dist/mathjax-parser.min.js
-dist/angular-mathjax-parser.js
+# dist/mathjax-parser.min.js
+# dist/angular-mathjax-parser.js
