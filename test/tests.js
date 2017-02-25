@@ -6,6 +6,7 @@
     inlineMathReplacement: ['XXX', 'XXX'],
     displayMathReplacement: ['YYY','ZZZ']
   };
+
   var parser = new MathjaxParser();
   var html;
   var out;
@@ -61,6 +62,13 @@
     html ="<p>$&lt;x$</p>";
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, '<p>XXX&lt;xXXX</p>');
+
+
+    //nested math, shouldnt be parsed
+    html ="$$ Hello $World$ $$";
+    out = parser.parse(html, config).outputHtml;
+    assert.equal( out, 'YYY Hello $World$ ZZZ');
+
 
   });
 

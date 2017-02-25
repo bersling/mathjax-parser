@@ -6,22 +6,15 @@ class MathjaxParser {
     this.config = config || {
           inlineMath: [['$','$'],['\\(','\\)']],
           displayMath: [['$$','$$'],['\\[','\\]']],
-          inlineMathReplacement: ['<span class="inline-math" style="color: red">', '</span>'],
-          displayMathReplacement: ['<span class="display-math" style="color: blue">','</span>']
+          inlineMathReplacement: ['XXX', 'XXX'],
+          displayMathReplacement: ['YYY','YYY']
         };
-
-    this.executionOrder = this.determineExecutionOrder();
-
-    if (this.executionOrder.valueOf() === ExecutionOrder.CONFLICT) {
-      console.log("Sorry, the provided config isn't supported. \"inlineMath.contains(displayMath)\" AND \"displayMath.contains(inlineMath)\" not supported");
-      return;
-    }
 
     //create a DOM element in order to use the DOM-Walker
     let body: HTMLElement = document.createElement('body');
     body.innerHTML = inputHtml;
 
-    this.processNodeList(body.childNodes);
+    this.processNodeList(body.childNodes, this.buildConfigArray(config));
 
     return {
       outputHtml: body.innerHTML
@@ -31,92 +24,83 @@ class MathjaxParser {
 
   private executionOrder;
   private config;
-  private configArryified: {delims: string[][][]; replacements: string[][]};
 
-  private walkTheDomAndOperateOnChildren = (node: Node, func) => {
-    var childNodes: NodeList = node.childNodes;
-    func(childNodes);
-    for (var i = 0; i < childNodes.length; i++) {
-      this.walkTheDomAndOperateOnChildren(childNodes[i], func);
-    }
-  };
+  private buildConfigArray(config): ConfigItem[]  {
+    let configArray: ConfigItem[] = [];
+    let insertAtIndex = (idx: number, configArray, grp: string[], type: string) => {
 
-  private determineExecutionOrder() {
-    let order: ExecutionOrder = ExecutionOrder.DISPLAY_FIRST;
-    this.config.inlineMath.forEach(inlineGrp => {
-      this.config.displayMath.forEach(displayGrp => {
-        if (inlineGrp[0].indexOf(displayGrp[0]) > -1) {
-          order = ExecutionOrder.INLINE_FIRST;
+      configArray.splice(idx, 0, {
+        group: grp,
+        type: type
+      });
+    };
+    let findIndex = (configArray: ConfigItem[], startDelimiter: string): number => {
+      let index = 0;
+      for (let i = 0; i < configArray.length; i++) {
+        if (startDelimiter.indexOf(configArray[i].group[0]) > -1) {
+          break;
         }
-      });
-    });
-    if (order.valueOf() === ExecutionOrder.INLINE_FIRST.valueOf()) {
-      this.config.inlineMath.forEach(inlineGrp => {
-        this.config.displayMath.forEach(displayGrp => {
-          if (displayGrp[0].indexOf(inlineGrp[0]) > -1) {
-            order = ExecutionOrder.CONFLICT;
-          }
-        });
-      });
-    }
+        ++index;
+      }
+      return index;
+    };
 
-    return order;
+    config.inlineMath.forEach(grp => {
+      let idx = findIndex(configArray, grp[0]);
+      insertAtIndex(idx, configArray, grp, 'inline');
+    });
+    config.displayMath.forEach(grp => {
+      let idx = findIndex(configArray, grp[0]);
+      insertAtIndex(idx, configArray, grp, 'display');
+    });
+    return configArray;
   }
 
-  private processNodeList = (nodeList: NodeList) => {
+  private processNodeList = (nodeList: NodeList, configArray: ConfigItem[]) => {
     let allAdjacentTextOrBrNodes: MyRange<number>[] = this.findAdjacentTextOrBrNodes(nodeList);
 
     allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange<number>) => {
-      if (this.executionOrder.valueOf() === ExecutionOrder.INLINE_FIRST) {
-        this.iterateMath('inline', textOrBrNodeSet, nodeList);
-        this.iterateMath('display', textOrBrNodeSet, nodeList);
-      } else {
-        this.iterateMath('display', textOrBrNodeSet, nodeList);
-        this.iterateMath('inline', textOrBrNodeSet, nodeList);
-      }
+      configArray.forEach(configItem => {
+        this.iterateMath(configItem, textOrBrNodeSet, nodeList);
+      });
     });
 
     //process children
     for (let i: number = 0; i < nodeList.length; i++) {
       let node: Node = nodeList[i];
-      this.processNodeList(node.childNodes);
+      this.processNodeList(node.childNodes, configArray);
     }
 
   };
 
-  private iterateMath(type: MathType, textOrBrNodeSet: MyRange<number>, nodeList: NodeList) {
+  private iterateMath(configItem: ConfigItem, textOrBrNodeSet: MyRange<number>, nodeList: NodeList) {
     //Iterate through all delimiters, trying to find matching delimiters
-    this.config[type + 'Math'].forEach(grp => {
+    let matchedDelimiterSets: MyRange<NodeAndIndex>[] = [];
 
-      let matchedDelimiterSets: MyRange<NodeAndIndex>[] = [];
+    for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
+      let node: Node = nodeList[i];
 
-      for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
-        let node: Node = nodeList[i];
+      //for the text nodes (type 3), other nodes dont matter
+      if (node.nodeType === 3) {
 
-        //for the text nodes (type 3), other nodes dont matter
-        if (node.nodeType === 3) {
+        const textContent: string = node.textContent;
 
-          const textContent: string = node.textContent;
+        //find a matches
+        //TODO: correct escapes for $ special case...
+        const reStart = new RegExp("(" + this.escapeRegExp(configItem.group[0]) + ")",'g');
+        const reEnd = new RegExp("(" + this.escapeRegExp(configItem.group[1]) + ")", 'g');
 
-          //find a matches
-          //TODO: correct escapes for $ special case...
-          //const pattern = grp[0] !== "$" ?  "(" + this.escapeRegExp(grp[0]) + ")" : "([^\\]|^)(\$)";
-          const reStart = new RegExp("(" + this.escapeRegExp(grp[0]) + ")",'g');
-          const reEnd = new RegExp("(" + this.escapeRegExp(grp[1]) + ")", 'g');
+        this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
 
-          this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
-
-        }
       }
+    }
 
-      this.cleanOccurences(matchedDelimiterSets);
+    this.cleanOccurences(matchedDelimiterSets);
 
-      //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
-      matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
-      matchedDelimiterSets.forEach((delimiterSet: MyRange<NodeAndIndex>) => {
-        this.replaceAllDelims(grp, delimiterSet, nodeList, type);
-      });
-
+    //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
+    matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
+    matchedDelimiterSets.forEach((delimiterSet: MyRange<NodeAndIndex>) => {
+      this.replaceAllDelims(configItem.group, delimiterSet, nodeList, configItem.type);
     });
   }
 
@@ -155,7 +139,6 @@ class MathjaxParser {
 
   };
 
-
   //fills occurences with matched start/end groups
   private buildOccurences = (reStart: RegExp, reEnd: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number) => {
 
@@ -177,7 +160,7 @@ class MathjaxParser {
       }
     }
 
-  }
+  };
 
   private searchStart = (reStart: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
     //find a starting delimiter larger than the last end delimiter
@@ -201,7 +184,7 @@ class MathjaxParser {
       }
 
     }
-  }
+  };
 
   private searchEnd = (reEnd: RegExp,  textContent: string, occurences:MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
     //find an end delimiter larger than startDelimiter
@@ -212,7 +195,7 @@ class MathjaxParser {
         occurences[occurences.length - 1].end = {
           nodeNumber: nodeNumber,
           index: m.index
-        }
+        };
         return true;
       } else {
         //continue search if something was found, but it's too low
@@ -307,6 +290,11 @@ interface MathjaxParserConfig {
   displayMath: string[][]; //e.g. [['$$','$$'],['\\[','\\]']],
   inlineMathReplacement: string[]; //e.g. ['<span class="inline-math">', '</span>']
   displayMathReplacement: string[] // e.g. ['<span class="display-math">','</span>']
+}
+
+interface ConfigItem {
+  group: string[];
+  type: MathType;
 }
 
 enum ExecutionOrder { INLINE_FIRST, DISPLAY_FIRST, CONFLICT}
