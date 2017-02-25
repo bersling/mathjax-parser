@@ -182,7 +182,6 @@ class MathjaxParser {
         nodeVal.substr(delimiterMatch.index + oldDelimLength, nodeVal.length - 1);
   };
 
-
   private pushStart(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number, delimiterGroup: DelimiterGroup) {
     matchedDelimiterSets.push({
       start: {
@@ -247,33 +246,14 @@ class MathjaxParser {
     return adjacentTextOrBrNodes;
   };
 
-
-
-
   private isTextOrBrNode = (node: Node) => {
     return node.nodeType === 3 || node.nodeName === 'BR';
-  };
-
-  //Regex Helpers
-  private escapeRegExp = (str: string) => {
-    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-  };
-
-  private escapeRegexReplacementString = (str: string) => {
-    return str.replace(/\$/g, "$$$$");
   };
 
 }
 
 interface ParserResponse {
   outputHtml: string;
-}
-
-interface NodeSubset {
-  type: string;
-  nodes: number[];
-  nodeValues: string[];
-  concated: string;
 }
 
 interface MyRange<T> {
@@ -304,5 +284,4 @@ interface CurrentState {
   lastMatchedGroup?: DelimiterGroup;
 }
 
-enum ExecutionOrder { INLINE_FIRST, DISPLAY_FIRST, CONFLICT}
 type MathType = 'inline' | 'display'

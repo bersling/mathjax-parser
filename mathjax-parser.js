@@ -77,12 +77,6 @@ var MathjaxParser = (function () {
         this.isTextOrBrNode = function (node) {
             return node.nodeType === 3 || node.nodeName === 'BR';
         };
-        this.escapeRegExp = function (str) {
-            return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-        };
-        this.escapeRegexReplacementString = function (str) {
-            return str.replace(/\$/g, "$$$$");
-        };
     }
     MathjaxParser.prototype.buildDelimiterArray = function (config) {
         var delimiterArray = [];
@@ -178,9 +172,3 @@ var MathjaxParser = (function () {
     ;
     return MathjaxParser;
 }());
-var ExecutionOrder;
-(function (ExecutionOrder) {
-    ExecutionOrder[ExecutionOrder["INLINE_FIRST"] = 0] = "INLINE_FIRST";
-    ExecutionOrder[ExecutionOrder["DISPLAY_FIRST"] = 1] = "DISPLAY_FIRST";
-    ExecutionOrder[ExecutionOrder["CONFLICT"] = 2] = "CONFLICT";
-})(ExecutionOrder || (ExecutionOrder = {}));
