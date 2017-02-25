@@ -1,6 +1,6 @@
 {
   "name": "mathjax-parser",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Find & Replace the mathjax delimiters in a HTML string",
   "main": "./dist/mathjax-parser.js",
   "repository": {
