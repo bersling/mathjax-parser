@@ -1,6 +1,6 @@
 # mathjax-parser
 
-A simple mathjax parser in order to find and replace occurences of mathjax in a HTML String. No Jquery. Zero Regex.
+A simple mathjax parser in order to find and replace occurences of mathjax in a HTML String. No Jquery. Zero Regex. 0 Code Warnings. 10+ unit tests. 
 
 ## Installation
 ```
