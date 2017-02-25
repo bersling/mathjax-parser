@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/bersling/mathjax-parser/issues"
   },
-  "homepage": "https://github.com/bersling/mathjax-parser#readme"
+  "homepage": "https://github.com/bersling/mathjax-parser#readme",
+  "devDependencies": {
+    "grunt": "^1.0.1"
+  }
 }

@@ -5,9 +5,5 @@
     "preserveConstEnums": true,
     "experimentalDecorators": true,
     "outFile": "mathjax-parser.js"
-  }/*,
-  "files": [
-    "mathjax-parser.ts",
-    "mathjax-parser-config.ts"
-  ]*/
+  }
 }
