@@ -7,11 +7,18 @@ module.exports = function(grunt) {
       files: ['./test/qunit.html', './test/qunit.min.html']
     },
 
+    //TYPESCRIPT
+    ts: {
+      default : {
+        tsconfig: true
+      }
+    },
+
     //MINIFICATION
     uglify: {
       my_target: {
         files: {
-          'dist/mathjax-parser.min.js': ['mathjax-parser.js']
+          './dist/mathjax-parser.min.js': ['./dist/mathjax-parser.js']
         }
       }
     },
@@ -36,9 +43,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-template');
+  grunt.loadNpmTasks('grunt-ts');
 
   // Task to run tests
   grunt.registerTask('test', 'qunit');
-  grunt.registerTask('build', 'template');
+  grunt.registerTask('build', ['template', 'uglify']);
 
 };
