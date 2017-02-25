@@ -76,8 +76,8 @@ class MathjaxParser {
 
   };
 
-  private isMatchingIndex = (text: string, idx: number, delim: string):  boolean => {
-    return text.substr(idx, delim.length) === delim;
+  private isMatchingIndex = (text: string, idx: number, delimiter: string):  boolean => {
+    return text.substr(idx, delimiter.length) === delimiter;
   };
 
   private iterateMath(delimiterArray: DelimiterGroup[], textOrBrNodeSet: MyRange<number>, nodeList: NodeList) {
@@ -89,7 +89,7 @@ class MathjaxParser {
     for (let nodeNumber = textOrBrNodeSet.start; nodeNumber < textOrBrNodeSet.end; nodeNumber++) {
       let node: Node = nodeList[nodeNumber];
 
-      //for the text nodes (type 3), other nodes dont matter
+      //for the text nodes (type 3), other nodes don't matter
       if (node.nodeType === 3) {
 
         const textContent: string = node.textContent;
@@ -100,7 +100,7 @@ class MathjaxParser {
       }
     }
 
-    this.cleanOccurences(state.matchedDelimiterSets);
+    this.cleanOccurrences(state.matchedDelimiterSets);
 
     //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
     this.replaceMatches(state.matchedDelimiterSets, nodeList);
@@ -120,7 +120,7 @@ class MathjaxParser {
     let idx = 0;
     while (idx < textContent.length) {
 
-      //if all occurences of delimiters so far are closed (i.e. have 'end') and we're looking for a new opening delimiter
+      //if all occurrences of delimiters so far are closed (i.e. have 'end') and we're looking for a new opening delimiter
       if (state.matchedDelimiterSets.length === 0 ||
           state.matchedDelimiterSets[state.matchedDelimiterSets.length - 1].end) {
 
@@ -128,7 +128,7 @@ class MathjaxParser {
           if (this.isMatchingIndex(textContent, idx, delimiterGroup.group[0])) {
             state.lastMatchedGroup = delimiterGroup;
             //TODO: correct escapes for $ special case...
-            this.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
+            MathjaxParser.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
             return true;
           }
         });
@@ -137,9 +137,8 @@ class MathjaxParser {
       //if start matched, but end not matched yet
       else {
         if (this.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
-          this.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+          MathjaxParser.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
         }
-
       }
       ++idx;
 
@@ -149,24 +148,24 @@ class MathjaxParser {
   private replaceStartAndEndOfMatchedSet = (delimiterSet: MyRange<DelimiterMatch>, nodeList: NodeList) => {
 
     //handle end FIRST
-    this.replaceDelims(nodeList, delimiterSet.end);
+    this.replaceDelimiters(nodeList, delimiterSet.end);
 
     //handle start
-    this.replaceDelims(nodeList, delimiterSet.start);
+    this.replaceDelimiters(nodeList, delimiterSet.start);
 
   };
 
-  private cleanOccurences = (occurences: MyRange<DelimiterMatch>[]) => {
-    if (occurences.length > 0) {
-      if (!occurences[occurences.length - 1].end) {
-        occurences.pop();
+  private cleanOccurrences = (occurrences: MyRange<DelimiterMatch>[]) => {
+    if (occurrences.length > 0) {
+      if (!occurrences[occurrences.length - 1].end) {
+        occurrences.pop();
       }
     }
   };
 
-  private replaceDelims = (nodeList: NodeList, delimiterMatch: DelimiterMatch) => {
+  private replaceDelimiters = (nodeList: NodeList, delimiterMatch: DelimiterMatch) => {
 
-    const oldDelimLength = delimiterMatch.isStart ?
+    const oldDelimiterLength = delimiterMatch.isStart ?
         delimiterMatch.delimiterGroup.group[0].length : delimiterMatch.delimiterGroup.group[1].length;
 
     const nodeVal = nodeList[delimiterMatch.nodeNumber].nodeValue;
@@ -179,10 +178,11 @@ class MathjaxParser {
             //replacement string
         this.config[delimiterMatch.delimiterGroup.type + 'MathReplacement'][delimiterMatch.isStart ? 0 : 1] +
             //string rest
-        nodeVal.substr(delimiterMatch.index + oldDelimLength, nodeVal.length - 1);
+        nodeVal.substr(delimiterMatch.index + oldDelimiterLength, nodeVal.length - 1);
   };
 
-  private pushStart(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number, delimiterGroup: DelimiterGroup) {
+  private static pushStart(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number,
+                           delimiterGroup: DelimiterGroup) {
     matchedDelimiterSets.push({
       start: {
         nodeNumber: nodeNumber,
@@ -194,7 +194,8 @@ class MathjaxParser {
     });
   };
 
-  private pushEnd(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number, delimiterGroup: DelimiterGroup) {
+  private static pushEnd(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number,
+                         delimiterGroup: DelimiterGroup) {
     matchedDelimiterSets[matchedDelimiterSets.length - 1].end = {
       nodeNumber: nodeNumber,
       index: idx,

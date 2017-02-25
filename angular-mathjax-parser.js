@@ -143,14 +143,14 @@ var MathjaxParser = (function () {
                 delimiterArray.some(function (delimiterGroup) {
                     if (_this.isMatchingIndex(textContent, idx, delimiterGroup.group[0])) {
                         state.lastMatchedGroup = delimiterGroup;
-                        _this.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
+                        MathjaxParser.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
                         return true;
                     }
                 });
             }
             else {
                 if (this.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
-                    this.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+                    MathjaxParser.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
                 }
             }
             ++idx;
