@@ -13,15 +13,11 @@
 
   QUnit.test( "Inline Math Tests", function( assert ) {
 
+
     //simple inline
     html ="First $test$";
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, 'First XXXtestXXX');
-
-    //shouldnt replace anything
-    html ="I thought $<span>it's great$</span>";
-    out = parser.parse(html, config).outputHtml;
-    assert.equal( out, html);
 
     //shouldnt replace anything
     html ="I thought $<span>it's great$</span>";
@@ -37,6 +33,7 @@
     html ="Hello $\\frac a b = c <br> =d$";
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, "Hello XXX\\frac a b = c <br> =dXXX");
+
 
     //$ on edges
     html = "$How you$";
@@ -62,7 +59,6 @@
     html ="<p>$&lt;x$</p>";
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, '<p>XXX&lt;xXXX</p>');
-
 
     //nested math, shouldnt be parsed
     html ="$$ Hello $World$ $$";

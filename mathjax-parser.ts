@@ -14,7 +14,7 @@ class MathjaxParser {
     let body: HTMLElement = document.createElement('body');
     body.innerHTML = inputHtml;
 
-    this.processNodeList(body.childNodes, this.buildConfigArray(config));
+    this.processNodeList(body.childNodes, this.buildDelimiterArray(config));
 
     return {
       outputHtml: body.innerHTML
@@ -22,22 +22,21 @@ class MathjaxParser {
 
   };
 
-  private executionOrder;
   private config;
 
-  private buildConfigArray(config): ConfigItem[]  {
-    let configArray: ConfigItem[] = [];
-    let insertAtIndex = (idx: number, configArray, grp: string[], type: string) => {
+  private buildDelimiterArray(config): DelimiterGroup[]  {
+    let delimiterArray: DelimiterGroup[] = [];
+    let insertAtIndex = (idx: number, delimiterArray, grp: string[], type: string) => {
 
-      configArray.splice(idx, 0, {
+      delimiterArray.splice(idx, 0, {
         group: grp,
         type: type
       });
     };
-    let findIndex = (configArray: ConfigItem[], startDelimiter: string): number => {
+    let findIndex = (delimiterArray: DelimiterGroup[], startDelimiter: string): number => {
       let index = 0;
-      for (let i = 0; i < configArray.length; i++) {
-        if (startDelimiter.indexOf(configArray[i].group[0]) > -1) {
+      for (let i = 0; i < delimiterArray.length; i++) {
+        if (startDelimiter.indexOf(delimiterArray[i].group[0]) > -1) {
           break;
         }
         ++index;
@@ -46,73 +45,118 @@ class MathjaxParser {
     };
 
     config.inlineMath.forEach(grp => {
-      let idx = findIndex(configArray, grp[0]);
-      insertAtIndex(idx, configArray, grp, 'inline');
+      let idx = findIndex(delimiterArray, grp[0]);
+      insertAtIndex(idx, delimiterArray, grp, 'inline');
     });
     config.displayMath.forEach(grp => {
-      let idx = findIndex(configArray, grp[0]);
-      insertAtIndex(idx, configArray, grp, 'display');
+      let idx = findIndex(delimiterArray, grp[0]);
+      insertAtIndex(idx, delimiterArray, grp, 'display');
     });
-    return configArray;
+    return delimiterArray;
   }
 
-  private processNodeList = (nodeList: NodeList, configArray: ConfigItem[]) => {
+  private processNodeList = (nodeList: NodeList, delimiterArray: DelimiterGroup[]) => {
+
     let allAdjacentTextOrBrNodes: MyRange<number>[] = this.findAdjacentTextOrBrNodes(nodeList);
 
     allAdjacentTextOrBrNodes.forEach((textOrBrNodeSet: MyRange<number>) => {
-      configArray.forEach(configItem => {
-        this.iterateMath(configItem, textOrBrNodeSet, nodeList);
-      });
+      this.iterateMath(delimiterArray, textOrBrNodeSet, nodeList);
     });
 
     //process children
     for (let i: number = 0; i < nodeList.length; i++) {
       let node: Node = nodeList[i];
-      this.processNodeList(node.childNodes, configArray);
+      
+      //only need to process non-text nodes
+      if (node.nodeType !== 3) {
+        this.processNodeList(node.childNodes, delimiterArray); 
+      }
+      
     }
 
   };
 
-  private iterateMath(configItem: ConfigItem, textOrBrNodeSet: MyRange<number>, nodeList: NodeList) {
-    //Iterate through all delimiters, trying to find matching delimiters
-    let matchedDelimiterSets: MyRange<NodeAndIndex>[] = [];
+  private isMatchingIndex = (text: string, idx: number, delim: string):  boolean => {
+    return text.substr(idx, delim.length) === delim;
+  };
 
-    for (var i = textOrBrNodeSet.start; i < textOrBrNodeSet.end; i++) {
-      let node: Node = nodeList[i];
+  private iterateMath(delimiterArray: DelimiterGroup[], textOrBrNodeSet: MyRange<number>, nodeList: NodeList) {
+    //Iterate through all delimiters, trying to find matching delimiters
+    let state: CurrentState = {
+      matchedDelimiterSets: []
+    };
+
+    for (let nodeNumber = textOrBrNodeSet.start; nodeNumber < textOrBrNodeSet.end; nodeNumber++) {
+      let node: Node = nodeList[nodeNumber];
 
       //for the text nodes (type 3), other nodes dont matter
       if (node.nodeType === 3) {
 
         const textContent: string = node.textContent;
 
-        //find a matches
-        //TODO: correct escapes for $ special case...
-        const reStart = new RegExp("(" + this.escapeRegExp(configItem.group[0]) + ")",'g');
-        const reEnd = new RegExp("(" + this.escapeRegExp(configItem.group[1]) + ")", 'g');
-
-        this.buildOccurences(reStart, reEnd, textContent, matchedDelimiterSets, i);
+        //check every index if matches a delimiter group
+        this.processIndices(textContent, state, delimiterArray, nodeNumber);
 
       }
     }
 
-    this.cleanOccurences(matchedDelimiterSets);
+    this.cleanOccurences(state.matchedDelimiterSets);
 
     //REPLACE ALL MATCHED DELIMITERS WITH REPLACEMENTS
+    this.replaceMatches(state.matchedDelimiterSets, nodeList);
+
+  }
+
+  private replaceMatches(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeList: NodeList) {
     matchedDelimiterSets = matchedDelimiterSets.reverse(); // work the array back to from so indexes don't get messed up
-    matchedDelimiterSets.forEach((delimiterSet: MyRange<NodeAndIndex>) => {
-      this.replaceAllDelims(configItem.group, delimiterSet, nodeList, configItem.type);
+    matchedDelimiterSets.forEach((delimiterSet: MyRange<DelimiterMatch>) => {
+      this.replaceStartAndEndOfMatchedSet(delimiterSet, nodeList);
     });
   }
 
-  private replaceAllDelims = (grp, delimiterSet: MyRange<NodeAndIndex>, nodeList: NodeList, type: MathType) => {
+  private processIndices(textContent: string, state: CurrentState,
+                         delimiterArray: DelimiterGroup[], nodeNumber: number) {
+
+    let idx = 0;
+    while (idx < textContent.length) {
+
+      //if all occurences of delimiters so far are closed (i.e. have 'end') and we're looking for a new opening delimiter
+      if (state.matchedDelimiterSets.length === 0 ||
+          state.matchedDelimiterSets[state.matchedDelimiterSets.length - 1].end) {
+
+        delimiterArray.some(delimiterGroup => {
+          if (this.isMatchingIndex(textContent, idx, delimiterGroup.group[0])) {
+            state.lastMatchedGroup = delimiterGroup;
+            //TODO: correct escapes for $ special case...
+            this.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
+            return true;
+          }
+        });
+      }
+
+      //if start matched, but end not matched yet
+      else {
+        if (this.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
+          this.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+        }
+
+      }
+      ++idx;
+
+    }
+  }
+
+  private replaceStartAndEndOfMatchedSet = (delimiterSet: MyRange<DelimiterMatch>, nodeList: NodeList) => {
+
     //handle end FIRST
-    this.replaceDelims(nodeList, grp, delimiterSet,  false, type);
+    this.replaceDelims(nodeList, delimiterSet.end);
 
     //handle start
-    this.replaceDelims(nodeList, grp, delimiterSet, true, type);
+    this.replaceDelims(nodeList, delimiterSet.start);
+
   };
 
-  private cleanOccurences = (occurences: MyRange<NodeAndIndex>[]) => {
+  private cleanOccurences = (occurences: MyRange<DelimiterMatch>[]) => {
     if (occurences.length > 0) {
       if (!occurences[occurences.length - 1].end) {
         occurences.pop();
@@ -120,88 +164,44 @@ class MathjaxParser {
     }
   };
 
-  private replaceDelims = (nodeList: NodeList, grp, delimiterSet: MyRange<NodeAndIndex> , isStart: boolean, type: MathType) => {
+  private replaceDelims = (nodeList: NodeList, delimiterMatch: DelimiterMatch) => {
 
-    const oldDelimLength = grp[isStart ? 0 : 1].length;
-    const nodeAndIndex = isStart ? delimiterSet.start : delimiterSet.end;
+    const oldDelimLength = delimiterMatch.isStart ?
+        delimiterMatch.delimiterGroup.group[0].length : delimiterMatch.delimiterGroup.group[1].length;
 
-    const nodeVal = nodeList[nodeAndIndex.nodeNumber].nodeValue;
+    const nodeVal = nodeList[delimiterMatch.nodeNumber].nodeValue;
 
     //insert the new delimiter while removing the old delimiter
-    nodeList[nodeAndIndex.nodeNumber].nodeValue =
+    nodeList[delimiterMatch.nodeNumber].nodeValue =
 
         //string start
-        nodeVal.substr(0, nodeAndIndex.index) +
+        nodeVal.substr(0, delimiterMatch.index) +
             //replacement string
-        this.config[type + 'MathReplacement'][isStart ? 0 : 1] +
+        this.config[delimiterMatch.delimiterGroup.type + 'MathReplacement'][delimiterMatch.isStart ? 0 : 1] +
             //string rest
-        nodeVal.substr(nodeAndIndex.index + oldDelimLength, nodeVal.length - 1);
-
+        nodeVal.substr(delimiterMatch.index + oldDelimLength, nodeVal.length - 1);
   };
 
-  //fills occurences with matched start/end groups
-  private buildOccurences = (reStart: RegExp, reEnd: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number) => {
 
-    let matchFound = false;
-
-    //in case it's a starting match
-    if (occurences.length == 0 || !occurences[occurences.length - 1].start) {
-      matchFound = this.searchStart(reStart, textContent, occurences, nodeNumber);
-      if (matchFound) {
-        this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
-      }
-    }
-
-    //find an end delimiter matching the start delimiter
-    else {
-      matchFound = this.searchEnd(reEnd, textContent, occurences, nodeNumber);
-      if (matchFound) {
-        this.buildOccurences(reStart, reEnd, textContent, occurences, nodeNumber);
-      }
-    }
-
+  private pushStart(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number, delimiterGroup: DelimiterGroup) {
+    matchedDelimiterSets.push({
+      start: {
+        nodeNumber: nodeNumber,
+        index: idx,
+        delimiterGroup: delimiterGroup,
+        isStart: true
+      },
+      end: undefined,
+    });
   };
 
-  private searchStart = (reStart: RegExp, textContent: string, occurences: MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
-    //find a starting delimiter larger than the last end delimiter
-    let m;
-    if (m = reStart.exec(textContent)) {
-      if(occurences.length === 0 ||
-          occurences[occurences.length - 1].end.nodeNumber < nodeNumber ||
-          occurences[occurences.length - 1].end.index < m.index
-      ) {
-        occurences.push({
-          start: {
-            nodeNumber: nodeNumber,
-            index: m.index
-          },
-          end: undefined
-        });
-        return true;
-      } else {
-        //continue search if something was found, but it's too low
-        this.searchEnd(reStart, textContent, occurences, nodeNumber);
-      }
-
-    }
-  };
-
-  private searchEnd = (reEnd: RegExp,  textContent: string, occurences:MyRange<NodeAndIndex>[], nodeNumber: number): boolean => {
-    //find an end delimiter larger than startDelimiter
-    var m;
-    if(m = reEnd.exec(textContent)) {
-      if (occurences[occurences.length - 1].start.nodeNumber < nodeNumber ||
-          occurences[occurences.length - 1].start.index < m.index) {
-        occurences[occurences.length - 1].end = {
-          nodeNumber: nodeNumber,
-          index: m.index
-        };
-        return true;
-      } else {
-        //continue search if something was found, but it's too low
-        this.searchEnd(reEnd, textContent, occurences, nodeNumber);
-      }
-    }
+  private pushEnd(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number, delimiterGroup: DelimiterGroup) {
+    matchedDelimiterSets[matchedDelimiterSets.length - 1].end = {
+      nodeNumber: nodeNumber,
+      index: idx,
+      delimiterGroup: delimiterGroup,
+      isStart: false
+    };
   };
 
   private findAdjacentTextOrBrNodes = (nodeList: NodeList): MyRange<number>[] => {
@@ -280,9 +280,11 @@ interface MyRange<T> {
   start: T;
   end: T;
 }
-interface NodeAndIndex {
+interface DelimiterMatch {
   nodeNumber: number;
   index: number;
+  isStart: boolean;
+  delimiterGroup: DelimiterGroup;
 }
 
 interface MathjaxParserConfig {
@@ -292,9 +294,14 @@ interface MathjaxParserConfig {
   displayMathReplacement: string[] // e.g. ['<span class="display-math">','</span>']
 }
 
-interface ConfigItem {
+interface DelimiterGroup {
   group: string[];
   type: MathType;
+}
+
+interface CurrentState {
+  matchedDelimiterSets: MyRange<DelimiterMatch>[];
+  lastMatchedGroup?: DelimiterGroup;
 }
 
 enum ExecutionOrder { INLINE_FIRST, DISPLAY_FIRST, CONFLICT}
