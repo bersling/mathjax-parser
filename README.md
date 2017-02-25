@@ -1,16 +1,18 @@
 # mathjax-parser
 
-A simple mathjax parser in order to find and replace occurences of mathjax in a HTML.
+A simple mathjax parser in order to find and replace occurences of mathjax in a HTML String.
 
 ## Installation
+```
 npm install --save mathjax-parser
+```
 
 ## Running the parser
 ```
 var parser = new MathjaxParser();
 parser.parse(demoString).outputHtml;
 ```
-(see the demo.html)
+See the demo.html or the [plunker](https://embed.plnkr.co/h84SUO5jzUayIIEYSfum/).
 
 ## Providing a configuration
 Running the parser without a configuration is a bit pointless. Provide it with a config that looks like this:
