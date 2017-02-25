@@ -4,15 +4,21 @@
   "description": "Find & Replace the mathjax delimiters in a HTML string",
   "main": "mathjax-parser.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "grunt"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bersling/mathjax-parser.git"
   },
   "keywords": [
-    "Mathjax"
+    "Mathjax",
+    "mathjax-parser",
+    "html",
+    "find-replace"
   ],
+  "engines": {
+    "node": ">=4"
+  },
   "author": "Daniel Niederberger <bersling@gmail.com>",
   "license": "MIT",
   "bugs": {
@@ -20,6 +26,7 @@
   },
   "homepage": "https://github.com/bersling/mathjax-parser#readme",
   "devDependencies": {
-    "grunt": "^1.0.1"
+    "grunt": "^1.0.1",
+    "grunt-contrib-qunit": "^1.3.0"
   }
 }
