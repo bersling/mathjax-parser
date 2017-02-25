@@ -192,7 +192,7 @@ class MathjaxParser {
       },
       end: undefined,
     });
-  };
+  }
 
   private static pushEnd(matchedDelimiterSets: MyRange<DelimiterMatch>[], nodeNumber: number, idx: number,
                          delimiterGroup: DelimiterGroup) {
@@ -202,7 +202,7 @@ class MathjaxParser {
       delimiterGroup: delimiterGroup,
       isStart: false
     };
-  };
+  }
 
   private findAdjacentTextOrBrNodes = (nodeList: NodeList): MyRange<number>[] => {
     //value true if node is textOrBr, false otherwise

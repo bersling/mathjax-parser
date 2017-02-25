@@ -4,6 +4,6 @@
     "removeComments": true,
     "preserveConstEnums": true,
     "experimentalDecorators": true,
-    "outFile": "mathjax-parser.js"
+    "outFile": "./dist/mathjax-parser.js"
   }
 }

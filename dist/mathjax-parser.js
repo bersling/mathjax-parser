@@ -160,7 +160,6 @@ var MathjaxParser = (function () {
             end: undefined,
         });
     };
-    ;
     MathjaxParser.pushEnd = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
         matchedDelimiterSets[matchedDelimiterSets.length - 1].end = {
             nodeNumber: nodeNumber,
@@ -169,6 +168,5 @@ var MathjaxParser = (function () {
             isStart: false
         };
     };
-    ;
     return MathjaxParser;
 }());

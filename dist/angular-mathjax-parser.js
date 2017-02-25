@@ -1,5 +1,5 @@
 (function(window, angular) {
-var MathjaxParser = (function () {
+  var MathjaxParser = (function () {
     function MathjaxParser() {
         var _this = this;
         this.parse = function (inputHtml, config) {
@@ -28,28 +28,28 @@ var MathjaxParser = (function () {
                 }
             }
         };
-        this.isMatchingIndex = function (text, idx, delim) {
-            return text.substr(idx, delim.length) === delim;
+        this.isMatchingIndex = function (text, idx, delimiter) {
+            return text.substr(idx, delimiter.length) === delimiter;
         };
         this.replaceStartAndEndOfMatchedSet = function (delimiterSet, nodeList) {
-            _this.replaceDelims(nodeList, delimiterSet.end);
-            _this.replaceDelims(nodeList, delimiterSet.start);
+            _this.replaceDelimiters(nodeList, delimiterSet.end);
+            _this.replaceDelimiters(nodeList, delimiterSet.start);
         };
-        this.cleanOccurences = function (occurences) {
-            if (occurences.length > 0) {
-                if (!occurences[occurences.length - 1].end) {
-                    occurences.pop();
+        this.cleanOccurrences = function (occurrences) {
+            if (occurrences.length > 0) {
+                if (!occurrences[occurrences.length - 1].end) {
+                    occurrences.pop();
                 }
             }
         };
-        this.replaceDelims = function (nodeList, delimiterMatch) {
-            var oldDelimLength = delimiterMatch.isStart ?
+        this.replaceDelimiters = function (nodeList, delimiterMatch) {
+            var oldDelimiterLength = delimiterMatch.isStart ?
                 delimiterMatch.delimiterGroup.group[0].length : delimiterMatch.delimiterGroup.group[1].length;
             var nodeVal = nodeList[delimiterMatch.nodeNumber].nodeValue;
             nodeList[delimiterMatch.nodeNumber].nodeValue =
                 nodeVal.substr(0, delimiterMatch.index) +
                     _this.config[delimiterMatch.delimiterGroup.type + 'MathReplacement'][delimiterMatch.isStart ? 0 : 1] +
-                    nodeVal.substr(delimiterMatch.index + oldDelimLength, nodeVal.length - 1);
+                    nodeVal.substr(delimiterMatch.index + oldDelimiterLength, nodeVal.length - 1);
         };
         this.findAdjacentTextOrBrNodes = function (nodeList) {
             var textOrBrNodes = [];
@@ -77,12 +77,6 @@ var MathjaxParser = (function () {
         };
         this.isTextOrBrNode = function (node) {
             return node.nodeType === 3 || node.nodeName === 'BR';
-        };
-        this.escapeRegExp = function (str) {
-            return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-        };
-        this.escapeRegexReplacementString = function (str) {
-            return str.replace(/\$/g, "$$$$");
         };
     }
     MathjaxParser.prototype.buildDelimiterArray = function (config) {
@@ -124,7 +118,7 @@ var MathjaxParser = (function () {
                 this.processIndices(textContent, state, delimiterArray, nodeNumber);
             }
         }
-        this.cleanOccurences(state.matchedDelimiterSets);
+        this.cleanOccurrences(state.matchedDelimiterSets);
         this.replaceMatches(state.matchedDelimiterSets, nodeList);
     };
     MathjaxParser.prototype.replaceMatches = function (matchedDelimiterSets, nodeList) {
@@ -156,7 +150,7 @@ var MathjaxParser = (function () {
             ++idx;
         }
     };
-    MathjaxParser.prototype.pushStart = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
+    MathjaxParser.pushStart = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
         matchedDelimiterSets.push({
             start: {
                 nodeNumber: nodeNumber,
@@ -167,8 +161,7 @@ var MathjaxParser = (function () {
             end: undefined,
         });
     };
-    ;
-    MathjaxParser.prototype.pushEnd = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
+    MathjaxParser.pushEnd = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
         matchedDelimiterSets[matchedDelimiterSets.length - 1].end = {
             nodeNumber: nodeNumber,
             index: idx,
@@ -176,17 +169,11 @@ var MathjaxParser = (function () {
             isStart: false
         };
     };
-    ;
     return MathjaxParser;
 }());
-var ExecutionOrder;
-(function (ExecutionOrder) {
-    ExecutionOrder[ExecutionOrder["INLINE_FIRST"] = 0] = "INLINE_FIRST";
-    ExecutionOrder[ExecutionOrder["DISPLAY_FIRST"] = 1] = "DISPLAY_FIRST";
-    ExecutionOrder[ExecutionOrder["CONFLICT"] = 2] = "CONFLICT";
-})(ExecutionOrder || (ExecutionOrder = {}));
-var parser = new MathjaxParser();
-angular.module('MathjaxParser', []).service('MathjaxParserService', function(){
-this.parse = parser.parse
-});
+
+  var parser = new MathjaxParser();
+  angular.module('MathjaxParser', []).service('MathjaxParserService', function(){
+    this.parse = parser.parse
+  });
 })(window, window.angular);
