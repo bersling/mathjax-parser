@@ -31,7 +31,6 @@
     "typescript": "^2.2.1"
   },
   "scripts": {
-    "test": "grunt test",
-    "install": "grunt build"
+    "test": "grunt test"
   }
 }
