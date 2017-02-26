@@ -43,7 +43,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-template');
-  grunt.loadNpmTasks('grunt-ts');
 
   // Task to run tests
   grunt.registerTask('test', 'qunit');
