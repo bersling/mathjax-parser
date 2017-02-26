@@ -11,6 +11,10 @@ module.exports = function(grunt) {
     ts: {
       default : {
         tsconfig: true
+      },
+      options: {
+        // disable the grunt-ts fast feature
+        fast: 'never'
       }
     },
 
@@ -43,9 +47,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-template');
+  grunt.loadNpmTasks('grunt-ts');
 
   // Task to run tests
   grunt.registerTask('test', 'qunit');
-  grunt.registerTask('build', ['template', 'uglify']);
+  grunt.registerTask('build', ['template', 'uglify', 'ts']);
 
 };
