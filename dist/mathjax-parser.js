@@ -185,3 +185,4 @@ var MathjaxParser = (function () {
     };
     return MathjaxParser;
 }());
+//# sourceMappingURL=mathjax-parser.js.map
