@@ -130,23 +130,38 @@ var MathjaxParser = (function () {
     MathjaxParser.prototype.processIndices = function (textContent, state, delimiterArray, nodeNumber) {
         var _this = this;
         var idx = 0;
-        while (idx < textContent.length) {
+        var _loop_1 = function () {
             if (state.matchedDelimiterSets.length === 0 ||
                 state.matchedDelimiterSets[state.matchedDelimiterSets.length - 1].end) {
+                var isMatch_1 = false;
                 delimiterArray.some(function (delimiterGroup) {
                     if (_this.isMatchingIndex(textContent, idx, delimiterGroup.group[0])) {
                         state.lastMatchedGroup = delimiterGroup;
                         MathjaxParser.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
+                        isMatch_1 = true;
                         return true;
                     }
                 });
-            }
-            else {
-                if (this.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
-                    MathjaxParser.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+                if (isMatch_1) {
+                    idx += state.lastMatchedGroup.group[0].length;
+                }
+                else {
+                    ++idx;
                 }
             }
-            ++idx;
+            else {
+                if (this_1.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
+                    MathjaxParser.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+                    idx += state.lastMatchedGroup.group[1].length;
+                }
+                else {
+                    ++idx;
+                }
+            }
+        };
+        var this_1 = this;
+        while (idx < textContent.length) {
+            _loop_1();
         }
     };
     MathjaxParser.pushStart = function (matchedDelimiterSets, nodeNumber, idx, delimiterGroup) {
@@ -170,4 +185,3 @@ var MathjaxParser = (function () {
     };
     return MathjaxParser;
 }());
-//# sourceMappingURL=mathjax-parser.js.map

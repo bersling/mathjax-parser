@@ -11,7 +11,7 @@
   var html;
   var out;
 
-  QUnit.test( "Inline Math Tests", function( assert ) {
+  QUnit.test( "Tests", function( assert ) {
 
 
     //simple inline
@@ -64,6 +64,11 @@
     html ="$$ Hello $World$ $$";
     out = parser.parse(html, config).outputHtml;
     assert.equal( out, 'YYY Hello $World$ ZZZ');
+
+    //same line $$ then $
+    html ="$$a$$ $b$";
+    out = parser.parse(html, config).outputHtml;
+    assert.equal( out, 'YYYaZZZ XXXbXXX');
 
 
   });

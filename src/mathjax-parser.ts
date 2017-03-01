@@ -123,24 +123,32 @@ class MathjaxParser {
       //if all occurrences of delimiters so far are closed (i.e. have 'end') and we're looking for a new opening delimiter
       if (state.matchedDelimiterSets.length === 0 ||
           state.matchedDelimiterSets[state.matchedDelimiterSets.length - 1].end) {
-
+        let isMatch: boolean = false;
         delimiterArray.some(delimiterGroup => {
           if (this.isMatchingIndex(textContent, idx, delimiterGroup.group[0])) {
             state.lastMatchedGroup = delimiterGroup;
             //TODO: correct escapes for $ special case...
             MathjaxParser.pushStart(state.matchedDelimiterSets, nodeNumber, idx, delimiterGroup);
+            isMatch = true;
             return true;
           }
         });
+        if (isMatch) {
+          idx += state.lastMatchedGroup.group[0].length;
+        } else {
+          ++idx;
+        }
       }
 
       //if start matched, but end not matched yet
       else {
         if (this.isMatchingIndex(textContent, idx, state.lastMatchedGroup.group[1])) {
           MathjaxParser.pushEnd(state.matchedDelimiterSets, nodeNumber, idx, state.lastMatchedGroup);
+          idx += state.lastMatchedGroup.group[1].length;
+        } else {
+          ++idx;
         }
       }
-      ++idx;
 
     }
   }
